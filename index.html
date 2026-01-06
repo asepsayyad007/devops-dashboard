@@ -2,18 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Asep's Digital Twin - Real Scale</title>
+    <title>Asep's Revit Model</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #f0f0f0; font-family: sans-serif; }
         #info {
             position: absolute; top: 20px; width: 100%; text-align: center;
-            color: white; pointer-events: none; z-index: 100;
-            text-shadow: 2px 2px 4px #000000;
+            color: #333; pointer-events: none;
         }
-        #controls {
-            position: absolute; bottom: 20px; left: 20px; color: #aaa; font-size: 12px; pointer-events: none;
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 24px; color: #555; background: rgba(255,255,255,0.8); padding: 20px; border-radius: 8px;
         }
-        h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
     </style>
     <script type="importmap">
         {
@@ -26,139 +25,92 @@
 </head>
 <body>
     <div id="info">
-        <h1>PROJECT: 39x40 RESIDENCE</h1>
-        <p>Ground Floor (Parking) + 1st Floor (2BHK) | Built from CAD Data</p>
+        <h1>Revit Digital Twin</h1>
+        <p>Left Click: Rotate | Right Click: Pan | Scroll: Zoom</p>
     </div>
-    <div id="controls">
-        Left Click: Rotate | Right Click: Pan | Scroll: Zoom
-    </div>
+    <div id="loading">Loading Model... 0%</div>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // --- 1. SETUP ---
+        // 1. Scene Setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x222222);
+        scene.background = new THREE.Color(0xf0f0f0);
         
-        // Camera setup for architectural view
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-        camera.position.set(50, 60, 60); // High angle
+        // 2. Camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(20, 20, 20); // Start position
 
+        // 3. Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        // Fix colors to look like Revit
+        renderer.outputColorSpace = THREE.SRGBColorSpace; 
         document.body.appendChild(renderer.domElement);
 
-        // --- 2. LIGHTS ---
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambLight);
+        // 4. Lights (Bright Architectural Lighting)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(20, 50, 20);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(10, 20, 10);
         dirLight.castShadow = true;
-        // Increase shadow quality for architectural lines
-        dirLight.shadow.mapSize.width = 2048; 
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.left = -50;
-        dirLight.shadow.camera.right = 50;
-        dirLight.shadow.camera.top = 50;
-        dirLight.shadow.camera.bottom = -50;
         scene.add(dirLight);
 
-        // --- 3. MATERIALS ---
-        const matConcrete = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.9 });
-        const matFloor = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.8 });
-        const matGlass = new THREE.MeshStandardMaterial({ color: 0x88ccff, opacity: 0.4, transparent: true });
-        const matStairs = new THREE.MeshStandardMaterial({ color: 0xd4a017 }); // Gold/Wood color for stairs
-
-        // --- 4. BUILDER FUNCTION (The Logic) ---
-        // Helper to draw walls based on Feet inputs
-        const FT = 1; // 1 Unit = 1 Foot
-        const group = new THREE.Group();
+        // 5. Load the Revit File
+        const loader = new GLTFLoader();
         
-        function createBox(x, y, z, w, h, d, mat) {
-            const geom = new THREE.BoxGeometry(w, h, d);
-            const mesh = new THREE.Mesh(geom, mat);
-            mesh.position.set(x, y + (h/2), z);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            group.add(mesh);
-            return mesh;
-        }
+        loader.load(
+            './house.glb', // THE FILE NAME MUST MATCH EXACTLY
+            function (gltf) {
+                const model = gltf.scene;
+                
+                // Auto-Center the model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center); // Move model center to (0,0,0)
+                
+                // Enable shadows for all parts
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
 
-        // --- 5. ARCHITECTURE CONSTRUCTION ---
-        
-        // == BASE (The Plot) ==
-        // 50x60 plot area
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x2e4c1e }));
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        scene.add(ground);
+                scene.add(model);
+                
+                // Hide loading screen
+                document.getElementById('loading').style.display = 'none';
+                
+                // Auto-fit camera
+                // Move camera back depending on model size
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                camera.position.z = maxDim * 2;
+                camera.position.y = maxDim;
+                camera.lookAt(0,0,0);
+            },
+            // Progress bar logic
+            function (xhr) {
+                const percent = (xhr.loaded / xhr.total * 100).toFixed(0);
+                document.getElementById('loading').innerText = 'Loading Model... ' + percent + '%';
+            },
+            // Error handler
+            function (error) {
+                console.error(error);
+                document.getElementById('loading').innerText = 'Error loading file. Check console.';
+            }
+        );
 
-        // == GROUND FLOOR (Open Stilt + Staircase) ==
-        const gfHeight = 10 * FT;
-        
-        // GF Floor Slab (39' x 40')
-        createBox(0, 0, 0, 39, 0.5, 40, matFloor);
-
-        // Staircase Tower (Left Side) - 7ft wide
-        createBox(-16, 0, 0, 7, gfHeight + 10, 20, matConcrete); 
-        
-        // Columns (To represent the open parking area)
-        const colSize = 1.5;
-        createBox(18, 0, 18, colSize, gfHeight, colSize, matConcrete); // Front Right
-        createBox(18, 0, -18, colSize, gfHeight, colSize, matConcrete); // Back Right
-        createBox(0, 0, -18, colSize, gfHeight, colSize, matConcrete); // Back Center
-        createBox(0, 0, 18, colSize, gfHeight, colSize, matConcrete); // Front Center
-
-        // == FIRST FLOOR (Residential Unit) ==
-        const ffY = gfHeight; // Start at top of GF
-        const ffHeight = 10 * FT;
-
-        // FF Floor Slab
-        createBox(0, ffY, 0, 39, 0.5, 40, matFloor);
-
-        // -- Exterior Walls --
-        // Back Wall
-        createBox(0, ffY, -19.5, 39, ffHeight, 1, matConcrete);
-        // Right Wall
-        createBox(19, ffY, 0, 1, ffHeight, 40, matConcrete);
-        // Front Wall (Set back slightly for balcony?)
-        createBox(5, ffY, 19.5, 29, ffHeight, 1, matConcrete); // Partial front wall
-        
-        // -- Interior Rooms (Based on your Plan) --
-        
-        // Bedroom 1 & 2 Divider (Center Vertical Wall)
-        // Splits the back half into two rooms (11'6" vs 11'0")
-        createBox(0, ffY, -10, 1, ffHeight, 20, matConcrete);
-
-        // Toilet Area (Between Bedrooms roughly)
-        // A small block representing the toilet complex
-        createBox(0, ffY, -10, 6, ffHeight, 8, matConcrete);
-
-        // Hall / Living Area Divider (Horizontal)
-        // Separates Bedrooms (Top) from Living (Bottom)
-        createBox(0, ffY, 0, 39, ffHeight, 1, matConcrete);
-
-        // Balcony Railing (Glass)
-        // Extending at the front
-        createBox(0, ffY, 19.5, 39, 3, 0.2, matGlass);
-
-
-        // == ROOF ==
-        const roofY = ffY + ffHeight;
-        createBox(0, roofY, 0, 40, 0.5, 42, new THREE.MeshStandardMaterial({color: 0x333333}));
-
-        scene.add(group);
-
-        // --- 6. CONTROLS ---
+        // 6. Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 1.0;
 
-        // --- 7. ANIMATION ---
+        // 7. Loop
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
@@ -166,7 +118,7 @@
         }
         animate();
 
-        // Resize Handler
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
