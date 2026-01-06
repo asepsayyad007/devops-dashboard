@@ -2,111 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Asep's 3D Viewer</title>
+    <title>Asep's AI Studio</title>
     <style>
-        /* --- GLASS UI THEME --- */
+        /* --- PREMIUM GLASS UI --- */
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --glass-blur: blur(12px);
-            --text-color: #ffffff;
-            --accent-color: #00d2ff;
+            --glass: rgba(20, 20, 20, 0.6);
+            --border: rgba(255, 255, 255, 0.1);
+            --blur: blur(20px);
+            --accent: #00f2ff;
         }
 
         body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: var(--text-color);
+            margin: 0; overflow: hidden; 
+            background: radial-gradient(circle at center, #2b2b2b 0%, #101010 100%);
+            font-family: 'Segoe UI', sans-serif; color: white;
         }
 
-        /* --- UI OVERLAYS --- */
-        .glass-panel {
+        /* --- OVERLAYS --- */
+        .panel {
             position: absolute;
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
-        #header-panel {
-            top: 24px;
-            left: 24px;
-            max-width: 300px;
-        }
+        #info-panel { top: 30px; left: 30px; width: 280px; }
+        #info-panel h1 { margin: 0; font-size: 22px; background: linear-gradient(90deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        #info-panel p { color: #888; font-size: 12px; margin-top: 5px; }
 
-        #controls-panel {
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        h1 {
-            margin: 0 0 8px 0;
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        p {
-            margin: 0;
-            font-size: 13px;
-            opacity: 0.8;
-            line-height: 1.5;
+        #controls-bar {
+            bottom: 40px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; padding: 15px 30px;
+            border-radius: 50px;
         }
 
         /* --- BUTTONS --- */
-        .btn {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        button {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: white; padding: 12px 24px; border-radius: 30px;
+            cursor: pointer; font-weight: 600; font-size: 14px;
+            display: flex; align-items: center; gap: 8px;
+            transition: 0.3s;
         }
+        button:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        button.active { background: var(--accent); color: black; border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
+        
+        /* AI Button Special Effect */
+        #ai-btn { border-color: rgba(0, 242, 255, 0.5); }
+        #ai-btn:hover { box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
 
-        .btn:hover {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #000;
-            transform: translateY(-2px);
-        }
-
-        /* File Input (Hidden) */
         #file-input { display: none; }
-
-        /* Loading Screen */
-        #loading-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            transition: opacity 0.5s;
-        }
-        .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top: 4px solid var(--accent-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.5s; font-size: 18px; letter-spacing: 2px; }
     </style>
     
     <script type="importmap">
@@ -120,129 +72,173 @@
 </head>
 <body>
 
-    <div id="loading-overlay">
-        <div class="spinner"></div>
+    <div id="loading">✨ OPTIMIZING NEURAL ENGINE...</div>
+
+    <div id="info-panel" class="panel">
+        <h1>AI Studio Viewer</h1>
+        <p>Interactive 360° & Material Generation</p>
+        <div style="margin-top: 20px; height: 1px; background: rgba(255,255,255,0.1);"></div>
+        <p style="margin-top: 10px; color: #666;">UPLOADED: <span id="model-name" style="color:#fff">Default</span></p>
     </div>
 
-    <div id="header-panel" class="glass-panel">
-        <h1>Digital Twin Viewer</h1>
-        <p>Interactive 3D environment.</p>
-        <p style="margin-top: 10px; font-size: 11px; opacity: 0.5;">POWERED BY ORACLE CLOUD</p>
+    <div id="controls-bar" class="panel">
+        <button onclick="toggleRotate()" id="rot-btn">🔄 360° View</button>
+        <button onclick="document.getElementById('file-input').click()">📂 Upload</button>
+        <button onclick="aiGenerate()" id="ai-btn">✨ AI Re-Style</button>
     </div>
 
-    <div id="controls-panel" class="glass-panel">
-        <button class="btn" onclick="resetView()">Reset View</button>
-        <button class="btn" onclick="document.getElementById('file-input').click()">
-            <span>📂</span> Upload .GLB
-        </button>
-        <input type="file" id="file-input" accept=".glb,.gltf">
-    </div>
+    <input type="file" id="file-input" accept=".glb,.gltf">
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { ContactShadows } from 'three/addons/helpers/ContactShadows.js'; // Pro Shadows
 
-        // --- SETUP ---
+        // --- 1. PRO SCENE SETUP ---
         const scene = new THREE.Scene();
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // Environment (Professional Lighting)
+        // Lighting & Env
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-        // Camera
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(15, 10, 15);
+        // Contact Shadows (The "Pro" Look)
+        const shadows = new THREE.ContactShadows(camera, scene, {
+            resolution: 1024,
+            scale: 50,
+            blur: 2,
+            opacity: 0.5,
+            color: 0x000000
+        });
+        shadows.position.y = 0; // Ground level
+        scene.add(shadows);
 
-        // Controls (Smoother)
+        // Camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(12, 6, 12);
+
+        // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.screenSpacePanning = false;
-        controls.maxPolarAngle = Math.PI / 2; // Prevent going under the ground
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = 2.0;
 
-        // --- MODEL LOADER ---
+        // --- 2. LOGIC ---
         let currentModel = null;
+        let originalMaterials = new Map(); // Store originals for undo (optional)
         const loader = new GLTFLoader();
-        const loadingScreen = document.getElementById('loading-overlay');
 
-        function loadModel(url) {
-            loadingScreen.style.opacity = '1';
-            loadingScreen.style.pointerEvents = 'auto';
+        function loadModel(url, name) {
+            const loadText = document.getElementById('loading');
+            loadText.style.opacity = '1';
 
-            // Remove old model if exists
-            if(currentModel) {
-                scene.remove(currentModel);
-                currentModel = null;
-            }
+            if(currentModel) scene.remove(currentModel);
 
-            loader.load(url, 
-                (gltf) => {
-                    currentModel = gltf.scene;
-                    
-                    // Auto-Center & Scale
-                    const box = new THREE.Box3().setFromObject(currentModel);
-                    const center = box.getCenter(new THREE.Vector3());
-                    const size = box.getSize(new THREE.Vector3());
-                    
-                    // Reset position to center
-                    currentModel.position.x += (currentModel.position.x - center.x);
-                    currentModel.position.y += (currentModel.position.y - center.y);
-                    currentModel.position.z += (currentModel.position.z - center.z);
-                    
-                    scene.add(currentModel);
-                    
-                    // Auto-Zoom
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    camera.position.set(maxDim, maxDim * 0.8, maxDim);
-                    camera.lookAt(0, 0, 0);
-                    controls.target.set(0, 0, 0);
+            loader.load(url, (gltf) => {
+                currentModel = gltf.scene;
 
-                    // Fade out loader
-                    loadingScreen.style.opacity = '0';
-                    loadingScreen.style.pointerEvents = 'none';
-                },
-                undefined,
-                (error) => {
-                    console.error(error);
-                    alert("Error loading model. Check console.");
-                    loadingScreen.style.opacity = '0';
-                }
-            );
-        }
-
-        // --- INITIAL LOAD (From Server) ---
-        // Tries to load 'house.glb' by default
-        loadModel('./house.glb');
-
-        // --- UPLOAD HANDLER ---
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const url = URL.createObjectURL(file);
-            loadModel(url);
-        });
-
-        // --- GLOBAL FUNCTIONS ---
-        window.resetView = () => {
-            if(currentModel) {
+                // Center & Scale
                 const box = new THREE.Box3().setFromObject(currentModel);
                 const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                
-                controls.reset();
-                camera.position.set(maxDim, maxDim * 0.8, maxDim);
-                camera.lookAt(0, 0, 0);
-            }
-        };
+                const center = box.getCenter(new THREE.Vector3());
 
-        // --- LOOP ---
+                // Reset position to (0,0,0) sitting ON the floor
+                currentModel.position.x += (currentModel.position.x - center.x);
+                currentModel.position.z += (currentModel.position.z - center.z);
+                currentModel.position.y = -box.min.y; // Sit exactly on shadow plane
+
+                // Enable real shadows on the model
+                currentModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        // Save original material reference
+                        originalMaterials.set(child.uuid, child.material.clone());
+                    }
+                });
+
+                scene.add(currentModel);
+                
+                // Adjust Camera
+                const maxDim = Math.max(size.x, size.y, size.z);
+                camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
+                controls.target.set(0, size.y/2, 0);
+                
+                loadText.style.opacity = '0';
+                if(name) document.getElementById('model-name').innerText = name;
+            });
+        }
+
+        // Default Load
+        loadModel('./house.glb', 'Default Model');
+
+        // --- 3. FEATURES ---
+
+        // 360 Toggle
+        window.toggleRotate = () => {
+            controls.autoRotate = !controls.autoRotate;
+            document.getElementById('rot-btn').classList.toggle('active');
+        }
+
+        // "AI" GENERATION (Procedural Material Engine)
+        window.aiGenerate = () => {
+            if(!currentModel) return;
+
+            // Define "AI" Style Palettes
+            const palettes = [
+                { name: "Cyberpunk", color: 0x222222, emissive: 0x00ffcc, rough: 0.2, metal: 0.9 },
+                { name: "Modern White", color: 0xffffff, emissive: 0x000000, rough: 0.8, metal: 0.0 },
+                { name: "Warm Wood", color: 0x8B5A2B, emissive: 0x000000, rough: 0.6, metal: 0.1 },
+                { name: "Stealth Black", color: 0x111111, emissive: 0x000000, rough: 0.4, metal: 0.8 },
+            ];
+
+            // Pick a random style
+            const style = palettes[Math.floor(Math.random() * palettes.length)];
+            const btn = document.getElementById('ai-btn');
+            btn.innerHTML = `✨ Applying: ${style.name}...`;
+            
+            // Apply logic
+            currentModel.traverse((child) => {
+                if (child.isMesh) {
+                    // Create new "AI Generated" material
+                    const newMat = new THREE.MeshStandardMaterial({
+                        color: child.name.includes("Glass") ? 0x88ccff : style.color, // Detect glass by name
+                        roughness: style.rough,
+                        metalness: style.metal,
+                        transparent: child.material.transparent,
+                        opacity: child.material.opacity
+                    });
+                    
+                    // Random variation
+                    if(Math.random() > 0.7) {
+                         newMat.color.setHex(0x555555); // Accent color
+                    }
+
+                    child.material = newMat;
+                }
+            });
+
+            setTimeout(() => { btn.innerHTML = "✨ AI Re-Style"; }, 1000);
+        }
+
+        // File Upload
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file) loadModel(URL.createObjectURL(file), file.name);
+        });
+
+        // --- 4. RENDER LOOP ---
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
