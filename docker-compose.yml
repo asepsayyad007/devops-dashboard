@@ -4,7 +4,7 @@ services:
     container_name: devops-app
     restart: always
     volumes:
-      - ./index.html:/usr/share/nginx/html/index.html
+      - ./index.html:/usr/share/nginx/html
     networks:
       - web_network
 
