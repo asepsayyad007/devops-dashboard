@@ -2,59 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Asep's AI Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Asep's Studio</title>
     <style>
-        /* --- PREMIUM GLASS UI --- */
+        /* --- iOS THEME VARIABLES --- */
         :root {
-            --glass: rgba(20, 20, 20, 0.6);
-            --border: rgba(255, 255, 255, 0.1);
-            --blur: blur(20px);
-            --accent: #00f2ff;
+            --glass-material: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --blur-strength: blur(20px);
+            --accent-color: #0A84FF; /* Apple Blue */
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
         }
-        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; color: white; }
-        
-        /* UI Panels */
-        .panel {
-            position: absolute; background: var(--glass);
-            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--border); border-radius: 20px; padding: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        #info-panel { top: 30px; left: 30px; width: 280px; }
-        #controls-bar { bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; padding: 15px 30px; border-radius: 50px; }
-        
-        button {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-            color: white; padding: 12px 24px; border-radius: 30px; cursor: pointer;
-            font-weight: 600; transition: 0.3s;
-        }
-        button:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
-        #ai-btn { border-color: rgba(0, 242, 255, 0.5); color: var(--accent); }
 
-        #loading {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 18px; letter-spacing: 2px; text-align: center;
+        body { 
+            margin: 0; overflow: hidden; 
+            background: radial-gradient(circle at 50% 10%, #2c3e50 0%, #000000 100%);
+            font-family: var(--font-stack);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
         }
+
+        /* --- UI CONTAINER --- */
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Let clicks pass through to 3D scene */
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 24px; box-sizing: border-box;
+        }
+
+        /* --- TOP HEADER (Dynamic Island Style) --- */
+        .header-pill {
+            pointer-events: auto;
+            align-self: center;
+            background: var(--glass-material);
+            backdrop-filter: var(--blur-strength);
+            -webkit-backdrop-filter: var(--blur-strength);
+            border: 1px solid var(--glass-border);
+            padding: 12px 24px;
+            border-radius: 100px;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .header-pill:hover { transform: scale(1.02); }
+        
+        h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.5px; }
+        .status-dot { width: 6px; height: 6px; background: #32d74b; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        p { margin: 2px 0 0 0; font-size: 11px; color: var(--text-secondary); }
+
+        /* --- BOTTOM CONTROLS (iOS Control Center) --- */
+        .dock-container {
+            pointer-events: auto;
+            align-self: center;
+            display: flex; gap: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            padding: 10px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        /* --- ICON BUTTONS --- */
+        .icon-btn {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        .icon-btn:active { transform: scale(0.95); }
+        .icon-btn.active { background: var(--text-primary); color: black; }
+        
+        /* Specific Styles */
+        .upload-btn { background: var(--accent-color); }
+        .upload-btn:hover { background: #409CFF; }
+
+        /* --- LOADING SPINNER --- */
+        #loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; pointer-events: none; transition: opacity 0.5s;
+        }
+        .spinner-blade {
+            position: absolute; left: 44.5%; top: 37%; width: 10%; height: 25%;
+            border-radius: 50% / 20%;
+            background-color: white;
+            animation: spinner-fade 1s linear infinite;
+        }
+        @keyframes spinner-fade { 0% { opacity: 1; } 100% { opacity: 0.25; } }
+
         #file-input { display: none; }
     </style>
+
     <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
     </script>
 </head>
 <body>
 
-    <div id="loading">✨ CONNECTING TO SERVER...</div>
-
-    <div id="info-panel" class="panel">
-        <h1 style="margin:0; font-size:22px;">AI Studio Viewer</h1>
-        <p style="color:#888; margin-top:5px; font-size:12px;">Interactive 360° & Material Generation</p>
+    <div id="loader">
+        <div class="spinner-blade" style="transform:rotate(0deg) translate(0,-150%); animation-delay:-1s;"></div>
+        <div class="spinner-blade" style="transform:rotate(30deg) translate(0,-150%); animation-delay:-0.9167s;"></div>
+        <div class="spinner-blade" style="transform:rotate(60deg) translate(0,-150%); animation-delay:-0.8333s;"></div>
+        <div class="spinner-blade" style="transform:rotate(90deg) translate(0,-150%); animation-delay:-0.75s;"></div>
+        <div class="spinner-blade" style="transform:rotate(120deg) translate(0,-150%); animation-delay:-0.6667s;"></div>
+        <div class="spinner-blade" style="transform:rotate(150deg) translate(0,-150%); animation-delay:-0.5833s;"></div>
+        <div class="spinner-blade" style="transform:rotate(180deg) translate(0,-150%); animation-delay:-0.5s;"></div>
+        <div class="spinner-blade" style="transform:rotate(210deg) translate(0,-150%); animation-delay:-0.4167s;"></div>
+        <div class="spinner-blade" style="transform:rotate(240deg) translate(0,-150%); animation-delay:-0.3333s;"></div>
+        <div class="spinner-blade" style="transform:rotate(270deg) translate(0,-150%); animation-delay:-0.25s;"></div>
+        <div class="spinner-blade" style="transform:rotate(300deg) translate(0,-150%); animation-delay:-0.1667s;"></div>
+        <div class="spinner-blade" style="transform:rotate(330deg) translate(0,-150%); animation-delay:-0.0833s;"></div>
     </div>
 
-    <div id="controls-bar" class="panel">
-        <button onclick="toggleRotate()">🔄 360°</button>
-        <button onclick="document.getElementById('file-input').click()">📂 Upload</button>
-        <button onclick="aiGenerate()" id="ai-btn">✨ AI Re-Style</button>
+    <div class="ui-layer">
+        <div class="header-pill">
+            <h1><span class="status-dot"></span>Asep's Studio</h1>
+            <p id="model-status">Waiting for input...</p>
+        </div>
+
+        <div class="dock-container">
+            <button class="icon-btn" onclick="toggleRotate()" id="btn-rotate" title="Auto Rotate">↻</button>
+            <button class="icon-btn" onclick="resetCamera()" title="Reset View">⌖</button>
+            <div style="width:1px; background:rgba(255,255,255,0.2); margin:0 4px;"></div> <button class="icon-btn upload-btn" onclick="document.getElementById('file-input').click()" title="Upload File">
+                <span style="font-size: 14px; font-weight: bold;">UPLOAD</span>
+            </button>
+        </div>
     </div>
+
     <input type="file" id="file-input" accept=".glb,.gltf">
 
     <script type="module">
@@ -62,95 +151,127 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-        import { ContactShadows } from 'three/addons/helpers/ContactShadows.js';
 
-        // 1. Scene
+        // --- SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111); // FORCE DARK BACKGROUND
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio); // Sharpness for Retina displays
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.body.appendChild(renderer.domElement);
 
+        // --- LIGHTING (Studio) ---
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+        
+        // --- CAMERA ---
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(20, 10, 20);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(15, 8, 15);
-
+        // --- CONTROLS (Smooth Physics) ---
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
+        controls.enableDamping = true; 
+        controls.dampingFactor = 0.05; // Smooth inertia
+        controls.rotateSpeed = 0.6; // Not too fast
+        controls.enablePan = true;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Prevent going underground
+        controls.minDistance = 2; // Don't zoom through walls
+        controls.maxDistance = 100;
 
-        // Shadows
-        const shadows = new THREE.ContactShadows(camera, scene, { resolution: 1024, scale: 50, blur: 2, opacity: 0.5, color: 0x000000 });
-        shadows.position.y = 0;
-        scene.add(shadows);
-
-        // 2. Loader Logic
+        // --- LOAD LOGIC ---
         let currentModel = null;
         const loader = new GLTFLoader();
+        const statusText = document.getElementById('model-status');
+        const loaderUi = document.getElementById('loader');
 
-        function loadModel(url) {
-            document.getElementById('loading').innerText = "✨ LOADING MODEL...";
-            document.getElementById('loading').style.color = "white";
+        function loadModel(url, filename) {
+            loaderUi.style.opacity = '1';
+            statusText.innerText = "Loading " + filename + "...";
 
-            if(currentModel) scene.remove(currentModel);
+            if(currentModel) {
+                scene.remove(currentModel);
+                currentModel = null;
+            }
 
             loader.load(url, (gltf) => {
                 currentModel = gltf.scene;
-                
-                // Auto-Center
+
+                // Auto Center & Scale
                 const box = new THREE.Box3().setFromObject(currentModel);
                 const center = box.getCenter(new THREE.Vector3());
-                currentModel.position.x += (currentModel.position.x - center.x);
-                currentModel.position.z += (currentModel.position.z - center.z);
-                currentModel.position.y = -box.min.y;
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
 
-                currentModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+                // Move model center to (0,0,0)
+                currentModel.position.sub(center);
+                
+                // Add to scene
                 scene.add(currentModel);
-                document.getElementById('loading').style.display = 'none';
 
-            }, undefined, (error) => {
-                // ERROR HANDLER
+                // Smart Camera Position
+                controls.reset();
+                camera.position.set(maxDim, maxDim * 0.6, maxDim);
+                controls.target.set(0, 0, 0);
+                
+                // Update UI
+                loaderUi.style.opacity = '0';
+                statusText.innerText = "Active: " + filename;
+            }, 
+            undefined, 
+            (error) => {
                 console.error(error);
-                document.getElementById('loading').innerText = "⚠️ ERROR: File not found.\nDid you update docker-compose.yml?";
-                document.getElementById('loading').style.color = "#ff4444";
+                statusText.innerText = "Error loading file";
+                statusText.style.color = "#ff453a"; // Apple Red
+                loaderUi.style.opacity = '0';
             });
         }
 
-        // Try to load
-        loadModel('./house.glb');
+        // Try load default
+        loadModel('./house.glb', 'Server Model');
 
-        // 3. Features
-        window.toggleRotate = () => { controls.autoRotate = !controls.autoRotate; }
-        
-        window.aiGenerate = () => {
-            if(!currentModel) return;
-            const palettes = [
-                { c: 0x222222, r: 0.2, m: 0.9 }, // Cyber
-                { c: 0xffffff, r: 0.8, m: 0.0 }, // Modern
-                { c: 0x8B5A2B, r: 0.6, m: 0.1 }  // Wood
-            ];
-            const style = palettes[Math.floor(Math.random() * palettes.length)];
-            currentModel.traverse((child) => {
-                if (child.isMesh) {
-                    child.material = new THREE.MeshStandardMaterial({
-                        color: child.name.includes("Glass") ? 0x88ccff : style.c,
-                        roughness: style.r, metalness: style.m,
-                        transparent: child.material.transparent, opacity: child.material.opacity
-                    });
-                }
-            });
-        }
+        // --- UI ACTIONS ---
+        window.toggleRotate = () => {
+            controls.autoRotate = !controls.autoRotate;
+            const btn = document.getElementById('btn-rotate');
+            if(controls.autoRotate) btn.classList.add('active');
+            else btn.classList.remove('active');
+        };
 
+        window.resetCamera = () => {
+             if(currentModel) {
+                const box = new THREE.Box3().setFromObject(currentModel);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                controls.reset();
+                camera.position.set(maxDim, maxDim * 0.6, maxDim);
+                controls.target.set(0, 0, 0);
+             }
+        };
+
+        // File Upload Handler
         document.getElementById('file-input').addEventListener('change', (e) => {
-            if(e.target.files[0]) loadModel(URL.createObjectURL(e.target.files[0]));
+            const file = e.target.files[0];
+            if(file) {
+                const url = URL.createObjectURL(file);
+                loadModel(url, file.name);
+            }
         });
 
-        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+        // --- LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
         animate();
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
