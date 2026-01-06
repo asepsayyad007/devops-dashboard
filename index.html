@@ -1,18 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Asep's Pipeline</title>
+    <meta charset="UTF-8">
+    <title>Asep's Digital Twin - 3D View</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .box { padding: 20px; border: 1px solid #ccc; display: inline-block; }
-        h1 { color: red; }
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        #info {
+            position: absolute; top: 10px; width: 100%; text-align: center;
+            color: white; font-family: sans-serif; pointer-events: none;
+            text-shadow: 1px 1px 2px black; z-index: 100;
+        }
+        h1 { margin: 0; font-size: 24px; }
+        p { margin: 5px; font-size: 14px; color: #aaa; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1>Pipeline Status: Automation Succeed</h1>
-        <p>Version: <b>v2.0</b></p>
-	<p>Updated via Terminal!</p>
+    <div id="info">
+        <h1>Asep's Residential Project</h1>
+        <p>Ground Floor + First Floor Concept | Oracle Cloud Powered</p>
+        <p>Left Click: Rotate | Right Click: Pan | Scroll: Zoom</p>
     </div>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+        import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+        // 1. Setup Scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x202020); // Dark architectural background
+        scene.fog = new THREE.Fog(0x202020, 20, 100);
+
+        // 2. Camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(30, 20, 30); // Start looking from corner
+
+        // 3. Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // 4. Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // 5. Build the House (The "Digital Twin")
+        
+        // Material (White Plaster)
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.5 });
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x3a5f0b });
+
+        // GROUND (The Plot)
+        const groundGeo = new THREE.PlaneGeometry(60, 60);
+        const ground = new THREE.Mesh(groundGeo, grassMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // GROUP for the House
+        const house = new THREE.Group();
+
+        // Ground Floor (30x40 footprint approximation)
+        const gfGeo = new THREE.BoxGeometry(10, 4, 15); 
+        const gf = new THREE.Mesh(gfGeo, wallMat);
+        gf.position.y = 2; // Half height
+        gf.castShadow = true;
+        gf.receiveShadow = true;
+        house.add(gf);
+
+        // First Floor (Slightly set back for balcony style)
+        const ffGeo = new THREE.BoxGeometry(9, 4, 12);
+        const ff = new THREE.Mesh(ffGeo, wallMat);
+        ff.position.y = 6; // Ground height (4) + Half height (2)
+        ff.position.z = -1; // Set back
+        ff.castShadow = true;
+        house.add(ff);
+
+        // Simple Roof (Flat)
+        const roofGeo = new THREE.BoxGeometry(10, 0.5, 13);
+        const roof = new THREE.Mesh(roofGeo, new THREE.MeshStandardMaterial({color: 0x333333}));
+        roof.position.y = 8.25;
+        roof.position.z = -1;
+        house.add(roof);
+
+        // Grid Helper (For architectural feel)
+        const gridHelper = new THREE.GridHelper(60, 20, 0x000000, 0x444444);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        scene.add(house);
+
+        // 6. Controls (Rotate/Zoom)
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // 7. Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
