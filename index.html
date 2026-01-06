@@ -11,82 +11,50 @@
             --blur: blur(20px);
             --accent: #00f2ff;
         }
-
-        body { 
-            margin: 0; overflow: hidden; 
-            background: radial-gradient(circle at center, #2b2b2b 0%, #101010 100%);
-            font-family: 'Segoe UI', sans-serif; color: white;
-        }
-
-        /* --- OVERLAYS --- */
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: 'Segoe UI', sans-serif; color: white; }
+        
+        /* UI Panels */
         .panel {
-            position: absolute;
-            background: var(--glass);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 24px;
+            position: absolute; background: var(--glass);
+            backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--border); border-radius: 20px; padding: 24px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
         }
-
         #info-panel { top: 30px; left: 30px; width: 280px; }
-        #info-panel h1 { margin: 0; font-size: 22px; background: linear-gradient(90deg, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        #info-panel p { color: #888; font-size: 12px; margin-top: 5px; }
-
-        #controls-bar {
-            bottom: 40px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; padding: 15px 30px;
-            border-radius: 50px;
-        }
-
-        /* --- BUTTONS --- */
+        #controls-bar { bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; padding: 15px 30px; border-radius: 50px; }
+        
         button {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
-            color: white; padding: 12px 24px; border-radius: 30px;
-            cursor: pointer; font-weight: 600; font-size: 14px;
-            display: flex; align-items: center; gap: 8px;
-            transition: 0.3s;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: white; padding: 12px 24px; border-radius: 30px; cursor: pointer;
+            font-weight: 600; transition: 0.3s;
         }
         button:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
-        button.active { background: var(--accent); color: black; border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); }
-        
-        /* AI Button Special Effect */
-        #ai-btn { border-color: rgba(0, 242, 255, 0.5); }
-        #ai-btn:hover { box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
+        #ai-btn { border-color: rgba(0, 242, 255, 0.5); color: var(--accent); }
 
-        #file-input { display: none; }
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.5s; font-size: 18px; letter-spacing: 2px; }
-    </style>
-    
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 18px; letter-spacing: 2px; text-align: center;
         }
+        #file-input { display: none; }
+    </style>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
 </head>
 <body>
 
-    <div id="loading">✨ OPTIMIZING NEURAL ENGINE...</div>
+    <div id="loading">✨ CONNECTING TO SERVER...</div>
 
     <div id="info-panel" class="panel">
-        <h1>AI Studio Viewer</h1>
-        <p>Interactive 360° & Material Generation</p>
-        <div style="margin-top: 20px; height: 1px; background: rgba(255,255,255,0.1);"></div>
-        <p style="margin-top: 10px; color: #666;">UPLOADED: <span id="model-name" style="color:#fff">Default</span></p>
+        <h1 style="margin:0; font-size:22px;">AI Studio Viewer</h1>
+        <p style="color:#888; margin-top:5px; font-size:12px;">Interactive 360° & Material Generation</p>
     </div>
 
     <div id="controls-bar" class="panel">
-        <button onclick="toggleRotate()" id="rot-btn">🔄 360° View</button>
+        <button onclick="toggleRotate()">🔄 360°</button>
         <button onclick="document.getElementById('file-input').click()">📂 Upload</button>
         <button onclick="aiGenerate()" id="ai-btn">✨ AI Re-Style</button>
     </div>
-
     <input type="file" id="file-input" accept=".glb,.gltf">
 
     <script type="module">
@@ -94,164 +62,95 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-        import { ContactShadows } from 'three/addons/helpers/ContactShadows.js'; // Pro Shadows
+        import { ContactShadows } from 'three/addons/helpers/ContactShadows.js';
 
-        // --- 1. PRO SCENE SETUP ---
+        // 1. Scene
         const scene = new THREE.Scene();
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        scene.background = new THREE.Color(0x111111); // FORCE DARK BACKGROUND
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // Lighting & Env
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-        // Contact Shadows (The "Pro" Look)
-        const shadows = new THREE.ContactShadows(camera, scene, {
-            resolution: 1024,
-            scale: 50,
-            blur: 2,
-            opacity: 0.5,
-            color: 0x000000
-        });
-        shadows.position.y = 0; // Ground level
-        scene.add(shadows);
-
-        // Camera
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(12, 6, 12);
+        camera.position.set(15, 8, 15);
 
-        // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
-        controls.autoRotate = false;
-        controls.autoRotateSpeed = 2.0;
 
-        // --- 2. LOGIC ---
+        // Shadows
+        const shadows = new THREE.ContactShadows(camera, scene, { resolution: 1024, scale: 50, blur: 2, opacity: 0.5, color: 0x000000 });
+        shadows.position.y = 0;
+        scene.add(shadows);
+
+        // 2. Loader Logic
         let currentModel = null;
-        let originalMaterials = new Map(); // Store originals for undo (optional)
         const loader = new GLTFLoader();
 
-        function loadModel(url, name) {
-            const loadText = document.getElementById('loading');
-            loadText.style.opacity = '1';
+        function loadModel(url) {
+            document.getElementById('loading').innerText = "✨ LOADING MODEL...";
+            document.getElementById('loading').style.color = "white";
 
             if(currentModel) scene.remove(currentModel);
 
             loader.load(url, (gltf) => {
                 currentModel = gltf.scene;
-
-                // Center & Scale
+                
+                // Auto-Center
                 const box = new THREE.Box3().setFromObject(currentModel);
-                const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
-
-                // Reset position to (0,0,0) sitting ON the floor
                 currentModel.position.x += (currentModel.position.x - center.x);
                 currentModel.position.z += (currentModel.position.z - center.z);
-                currentModel.position.y = -box.min.y; // Sit exactly on shadow plane
+                currentModel.position.y = -box.min.y;
 
-                // Enable real shadows on the model
-                currentModel.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                        // Save original material reference
-                        originalMaterials.set(child.uuid, child.material.clone());
-                    }
-                });
-
+                currentModel.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
                 scene.add(currentModel);
-                
-                // Adjust Camera
-                const maxDim = Math.max(size.x, size.y, size.z);
-                camera.position.set(maxDim * 1.5, maxDim * 0.8, maxDim * 1.5);
-                controls.target.set(0, size.y/2, 0);
-                
-                loadText.style.opacity = '0';
-                if(name) document.getElementById('model-name').innerText = name;
+                document.getElementById('loading').style.display = 'none';
+
+            }, undefined, (error) => {
+                // ERROR HANDLER
+                console.error(error);
+                document.getElementById('loading').innerText = "⚠️ ERROR: File not found.\nDid you update docker-compose.yml?";
+                document.getElementById('loading').style.color = "#ff4444";
             });
         }
 
-        // Default Load
-        loadModel('./house.glb', 'Default Model');
+        // Try to load
+        loadModel('./house.glb');
 
-        // --- 3. FEATURES ---
-
-        // 360 Toggle
-        window.toggleRotate = () => {
-            controls.autoRotate = !controls.autoRotate;
-            document.getElementById('rot-btn').classList.toggle('active');
-        }
-
-        // "AI" GENERATION (Procedural Material Engine)
+        // 3. Features
+        window.toggleRotate = () => { controls.autoRotate = !controls.autoRotate; }
+        
         window.aiGenerate = () => {
             if(!currentModel) return;
-
-            // Define "AI" Style Palettes
             const palettes = [
-                { name: "Cyberpunk", color: 0x222222, emissive: 0x00ffcc, rough: 0.2, metal: 0.9 },
-                { name: "Modern White", color: 0xffffff, emissive: 0x000000, rough: 0.8, metal: 0.0 },
-                { name: "Warm Wood", color: 0x8B5A2B, emissive: 0x000000, rough: 0.6, metal: 0.1 },
-                { name: "Stealth Black", color: 0x111111, emissive: 0x000000, rough: 0.4, metal: 0.8 },
+                { c: 0x222222, r: 0.2, m: 0.9 }, // Cyber
+                { c: 0xffffff, r: 0.8, m: 0.0 }, // Modern
+                { c: 0x8B5A2B, r: 0.6, m: 0.1 }  // Wood
             ];
-
-            // Pick a random style
             const style = palettes[Math.floor(Math.random() * palettes.length)];
-            const btn = document.getElementById('ai-btn');
-            btn.innerHTML = `✨ Applying: ${style.name}...`;
-            
-            // Apply logic
             currentModel.traverse((child) => {
                 if (child.isMesh) {
-                    // Create new "AI Generated" material
-                    const newMat = new THREE.MeshStandardMaterial({
-                        color: child.name.includes("Glass") ? 0x88ccff : style.color, // Detect glass by name
-                        roughness: style.rough,
-                        metalness: style.metal,
-                        transparent: child.material.transparent,
-                        opacity: child.material.opacity
+                    child.material = new THREE.MeshStandardMaterial({
+                        color: child.name.includes("Glass") ? 0x88ccff : style.c,
+                        roughness: style.r, metalness: style.m,
+                        transparent: child.material.transparent, opacity: child.material.opacity
                     });
-                    
-                    // Random variation
-                    if(Math.random() > 0.7) {
-                         newMat.color.setHex(0x555555); // Accent color
-                    }
-
-                    child.material = newMat;
                 }
             });
-
-            setTimeout(() => { btn.innerHTML = "✨ AI Re-Style"; }, 1000);
         }
 
-        // File Upload
         document.getElementById('file-input').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if(file) loadModel(URL.createObjectURL(file), file.name);
+            if(e.target.files[0]) loadModel(URL.createObjectURL(e.target.files[0]));
         });
 
-        // --- 4. RENDER LOOP ---
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
         animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
